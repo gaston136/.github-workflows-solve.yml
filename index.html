@@ -1,29 +1,31 @@
-from sympy import sympify, Eq, solve
+name: Genereer argumenten lijst
 
-def solve_equation(eq_str):
-    try:
-        if '=' in eq_str:
-            left, right = eq_str.split('=')
-            equation = Eq(sympify(left.strip()), sympify(right.strip()))
-            vars = equation.free_symbols
-            if vars:
-                var = vars.pop()
-                solutions = solve(equation, var)
-                return f"{eq_str} => {var} = {solutions}"
-            else:
-                return f"{eq_str} => Geen variabelen gevonden"
-        else:
-            val = sympify(eq_str.strip()).evalf()
-            return f"{eq_str} => {val}"
-    except Exception as e:
-        return f"{eq_str} => Kan niet oplossen: {e}"
+on:
+  push:
+    branches: [ main ]
 
-with open("problems.txt") as f:
-    problems = f.readlines()
+jobs:
+  generate:
+    runs-on: ubuntu-latest
 
-with open("solutions.txt", "w") as f:
-    for problem in problems:
-        problem = problem.strip()
-        if problem:
-            solution = solve_equation(problem)
-            f.write(solution + "\n")
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Installeer Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Run generate script
+      run: python generate_arguments.py
+
+    - name: Commit en push gegenereerde argumenten
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add arguments.md
+        git commit -m "Automatisch gegenereerde argumentenlijst"
+        git push
+      continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
